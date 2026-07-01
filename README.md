@@ -1,5 +1,7 @@
 # 📈 StockAI
 
+> 🔗 **Live demo:** https://iambatman07-stockai.hf.space · [HF Space](https://huggingface.co/spaces/IamBatman07/StockAI)
+
 This project is a **Flask-based multi-page web application** that provides:
 - **LSTM-based Stock Price Prediction**
 - **Historical Stock Data Analysis with Technical Indicators**
@@ -39,22 +41,6 @@ All modules use **Alpha Vantage API** for fetching financial data and are organi
   - % Price Change
   - Volatility
   - Mean Price
-
----
-
-## 📸 Current Project Output Screenshots
-
-### Home Page
-![Home Page](images/Home.png)
-![Home Page Prediction Output](images/Home2.png)
-
-### Historical Analysis -
-![Historical Analysis Overview](images/Historical.png)
-![Historical Analysis Detailed View](images/Historical2.png)
-
-### Correlation Analysis
-![Correlation Heatmap](images/Correlation.png)
-![Correlation Normalized Trends](images/Correlation2.png)
 
 ---
 
