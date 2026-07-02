@@ -115,6 +115,16 @@ def analyze():
                     error="Not enough overlapping data found for the selected tickers and date range")
 
             corr_matrix = close_data.corr(min_periods=2)
+            while len(corr_matrix.columns) >= 2 and corr_matrix.isna().to_numpy().any():
+                missing_counts = corr_matrix.isna().sum()
+                drop_column = missing_counts.sort_values(ascending=False).index[0]
+                corr_matrix = corr_matrix.drop(index=drop_column, columns=drop_column)
+
+            if corr_matrix.empty or len(corr_matrix.columns) < 2:
+                return render_template("correlation.html",
+                    error="Not enough overlapping data found for the selected tickers and date range")
+
+            close_data = close_data[corr_matrix.columns]
 
             stats = {}
             for ticker in close_data.columns:
@@ -136,10 +146,13 @@ def analyze():
                 for j in range(i + 1, len(corr_matrix.columns)):
                     t1 = corr_matrix.columns[i]
                     t2 = corr_matrix.columns[j]
+                    correlation = corr_matrix.iloc[i, j]
+                    if pd.isna(correlation):
+                        continue
                     corr_pairs.append({
                         'ticker1': t1,
                         'ticker2': t2,
-                        'correlation': round(float(corr_matrix.iloc[i, j]), 3)
+                        'correlation': round(float(correlation), 3)
                     })
 
             corr_pairs.sort(key=lambda x: abs(x['correlation']), reverse=True)
