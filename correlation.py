@@ -102,13 +102,19 @@ def analyze():
                     error_msg += f" Failed tickers: {', '.join(failed_tickers)}"
                 return render_template("correlation.html", error=error_msg)
 
-            close_data = close_data.dropna()
+            close_data = close_data.dropna(how="all")
+            valid_columns = [
+                column
+                for column in close_data.columns
+                if close_data[column].dropna().shape[0] >= 2
+            ]
+            close_data = close_data[valid_columns]
 
-            if close_data.empty:
+            if close_data.empty or len(close_data.columns) < 2:
                 return render_template("correlation.html",
-                    error="No overlapping data found for the selected tickers and date range")
+                    error="Not enough overlapping data found for the selected tickers and date range")
 
-            corr_matrix = close_data.corr()
+            corr_matrix = close_data.corr(min_periods=2)
 
             stats = {}
             for ticker in close_data.columns:
