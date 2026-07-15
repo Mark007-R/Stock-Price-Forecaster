@@ -75,10 +75,18 @@ def run_prediction(job_id, ticker, num_days):
         data = data.dropna()
         close_prices = data["Close"].values.astype(float).reshape(-1, 1)
 
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        scaled_data = scaler.fit_transform(close_prices)
-
         time_step = 30
+
+        # ── Fit the scaler on the TRAIN slice ONLY (no look-ahead leakage) ──
+        # Previously: scaler.fit_transform(close_prices) ran on the FULL series
+        # BEFORE the train/test split, leaking the test set's min/max into the
+        # training normalisation and inflating the reported RMSE/MAE/MAPE.
+        # Fix: choose the temporal split on the raw price series, fit the scaler
+        # on the training prices only, then transform the whole series with it.
+        raw_split = int(len(close_prices) * 0.8)
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        scaler.fit(close_prices[:raw_split])          # train-only fit — no peeking
+        scaled_data = scaler.transform(close_prices)
 
         def create_dataset(arr, ts):
             X, y = [], []

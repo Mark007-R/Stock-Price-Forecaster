@@ -225,9 +225,16 @@ if selected_page == "📈 Stock Predictor":
                     st.error("⚠️ Not enough historical data for this ticker. Please try another stock.")
                     st.stop()
 
-                # Normalize Data
+                # Normalize Data — fit the scaler on the TRAIN slice ONLY.
+                # Previously: scaler.fit_transform(data[['Close']]) ran on the
+                # FULL series before the split below, leaking the test set's
+                # min/max into training and inflating the reported metrics.
+                # Fix: pick the temporal split on the raw prices, fit on train
+                # prices only, then transform the whole series with that scaler.
+                raw_split = int(len(data) * 0.8)
                 scaler = MinMaxScaler(feature_range=(0, 1))
-                scaled_data = scaler.fit_transform(data[['Close']])
+                scaler.fit(data[['Close']].iloc[:raw_split])   # train-only fit — no peeking
+                scaled_data = scaler.transform(data[['Close']])
 
                 # Prepare Data for LSTM
                 def create_dataset(data, time_step=60):
@@ -241,7 +248,7 @@ if selected_page == "📈 Stock Predictor":
                 X, y = create_dataset(scaled_data, time_step)
                 X = X.reshape(X.shape[0], X.shape[1], 1)
 
-                # Train-Test Split
+                # Train-Test Split (temporal — matches the scaler split above)
                 split_idx = int(len(X) * 0.8)
                 X_train, X_test = X[:split_idx], X[split_idx:]
                 y_train, y_test = y[:split_idx], y[split_idx:]
