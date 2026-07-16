@@ -1,0 +1,56 @@
+{
+  "day02": {
+    "day": 2,
+    "phase": "2a \u2014 target reframing + walk-forward harness",
+    "date_range": {
+      "start": "2021-01-01",
+      "end": "2025-01-01"
+    },
+    "tickers": [
+      "AAPL",
+      "MSFT",
+      "SPY",
+      "GOOGL",
+      "AMZN",
+      "META",
+      "NVDA",
+      "JPM",
+      "XOM",
+      "KO"
+    ],
+    "n_folds": 5,
+    "time_step": 30,
+    "split": "expanding-window walk-forward, refit per fold, no peeking",
+    "scoring_space": "next-day simple returns",
+    "summary": {
+      "lstm_price": {
+        "mean_rmse_ret": 0.030677,
+        "mean_dir_acc": 0.4894,
+        "dir_acc_std_across_folds": 0.0537
+      },
+      "lstm_returns": {
+        "mean_rmse_ret": 0.016395,
+        "mean_dir_acc": 0.5193,
+        "dir_acc_std_across_folds": 0.0516
+      },
+      "persistence_zero": {
+        "mean_rmse_ret": 0.01638,
+        "mean_dir_acc": "n/a",
+        "dir_acc_std_across_folds": "n/a"
+      },
+      "momentum": {
+        "mean_rmse_ret": 0.023088,
+        "mean_dir_acc": 0.5114,
+        "dir_acc_std_across_folds": 0.0454
+      },
+      "always_up": {
+        "mean_rmse_ret": "n/a",
+        "mean_dir_acc": 0.5491,
+        "dir_acc_std_across_folds": 0.0444
+      }
+    },
+    "lstm_returns_folds_beating_coinflip": "32/50",
+    "lstm_returns_tickers_beating_random_walk_rmse": "3/10",
+    "note": "Return RMSE ~equals the zero-return random walk for every model \u2014 next-day returns are near-unpredictable. Directional accuracy hovers at coin-flip. This is the honest Day-2 finding and the baseline the Day-3 model bake-off must beat."
+  }
+}

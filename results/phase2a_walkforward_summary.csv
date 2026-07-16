@@ -1,0 +1,6 @@
+method,mean_rmse_ret,mean_dir_acc,dir_acc_std_across_folds
+lstm_price,0.030677,0.4894,0.0537
+lstm_returns,0.016395,0.5193,0.0516
+persistence_zero,0.01638,n/a,n/a
+momentum,0.023088,0.5114,0.0454
+always_up,n/a,0.5491,0.0444
