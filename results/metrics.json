@@ -52,5 +52,151 @@
     "lstm_returns_folds_beating_coinflip": "32/50",
     "lstm_returns_tickers_beating_random_walk_rmse": "3/10",
     "note": "Return RMSE ~equals the zero-return random walk for every model \u2014 next-day returns are near-unpredictable. Directional accuracy hovers at coin-flip. This is the honest Day-2 finding and the baseline the Day-3 model bake-off must beat."
+  },
+  "day03": {
+    "day": 3,
+    "phase": "2b \u2014 model bake-off + cost-aware trading backtest",
+    "date_range": {
+      "start": "2021-01-01",
+      "end": "2025-01-01"
+    },
+    "tickers": [
+      "AAPL",
+      "MSFT",
+      "SPY",
+      "GOOGL",
+      "AMZN",
+      "META",
+      "NVDA",
+      "JPM",
+      "XOM",
+      "KO"
+    ],
+    "n_folds": 5,
+    "cost_bps_per_side": 5.0,
+    "split": "expanding-window walk-forward, refit per fold, no peeking",
+    "scoring_space": "next-day simple returns",
+    "trading_rule": "long when predicted return > 0, else flat",
+    "benchmark": "buy-and-hold on the identical out-of-sample days",
+    "summary": {
+      "always_up": {
+        "rmse_ret": null,
+        "dir_acc": 0.5491,
+        "total_return": 1.7871,
+        "ann_return": 0.5761,
+        "sharpe": 1.83,
+        "max_drawdown": -0.1788,
+        "n_trades": 1.0,
+        "exposure": 1.0,
+        "cost_drag": 0.0014
+      },
+      "buy_and_hold": {
+        "rmse_ret": null,
+        "dir_acc": null,
+        "total_return": 1.7871,
+        "ann_return": 0.5761,
+        "sharpe": 1.83,
+        "max_drawdown": -0.1788,
+        "n_trades": 1.0,
+        "exposure": 1.0,
+        "cost_drag": 0.0014
+      },
+      "arima": {
+        "rmse_ret": 0.016377,
+        "dir_acc": 0.5343,
+        "total_return": 1.1811,
+        "ann_return": 0.3918,
+        "sharpe": 1.34,
+        "max_drawdown": -0.1798,
+        "n_trades": 53.2,
+        "exposure": 0.845,
+        "cost_drag": 0.0547
+      },
+      "xgboost": {
+        "rmse_ret": 0.017907,
+        "dir_acc": 0.5164,
+        "total_return": 0.8409,
+        "ann_return": 0.3083,
+        "sharpe": 1.22,
+        "max_drawdown": -0.1593,
+        "n_trades": 185.0,
+        "exposure": 0.536,
+        "cost_drag": 0.1819
+      },
+      "lstm_returns": {
+        "rmse_ret": 0.016394,
+        "dir_acc": 0.5187,
+        "total_return": 0.7962,
+        "ann_return": 0.2949,
+        "sharpe": 1.108,
+        "max_drawdown": -0.1923,
+        "n_trades": 55.8,
+        "exposure": 0.716,
+        "cost_drag": 0.053
+      },
+      "momentum": {
+        "rmse_ret": 0.023088,
+        "dir_acc": 0.5114,
+        "total_return": 0.5458,
+        "ann_return": 0.222,
+        "sharpe": 0.904,
+        "max_drawdown": -0.1666,
+        "n_trades": 243.9,
+        "exposure": 0.548,
+        "cost_drag": 0.2004
+      },
+      "prophet": {
+        "rmse_ret": 0.01706,
+        "dir_acc": 0.5006,
+        "total_return": 0.752,
+        "ann_return": 0.2536,
+        "sharpe": 0.875,
+        "max_drawdown": -0.1917,
+        "n_trades": 61.2,
+        "exposure": 0.536,
+        "cost_drag": 0.0631
+      },
+      "persistence_zero": {
+        "rmse_ret": 0.01638,
+        "dir_acc": null,
+        "total_return": 0.0,
+        "ann_return": 0.0,
+        "sharpe": 0.0,
+        "max_drawdown": 0.0,
+        "n_trades": 0.0,
+        "exposure": 0.0,
+        "cost_drag": 0.0
+      }
+    },
+    "buy_and_hold": {
+      "sharpe": 1.83,
+      "total_return": 1.7871
+    },
+    "tickers_beating_buy_and_hold_sharpe": {
+      "always_up": 0,
+      "arima": 1,
+      "lstm_returns": 1,
+      "momentum": 1,
+      "persistence_zero": 0,
+      "prophet": 0,
+      "xgboost": 1
+    },
+    "champion_among_forecasting_models": "arima",
+    "champion_sharpe_vs_buy_and_hold": -0.49,
+    "backtest_identity_check": {
+      "claim": "always_up must equal buy_and_hold (long every day, 1 trade)",
+      "sharpe_gap": 4.44e-16,
+      "passed": true
+    },
+    "exposure_vs_sharpe_correlation": 0.971,
+    "xgb_feature_gain": {
+      "n_features": 18,
+      "uniform_gain": 0.0556,
+      "max_gain": 0.0628,
+      "min_gain": 0.0433,
+      "top_feature": "mean_ret_5",
+      "interpretation": "Gain is spread almost uniformly across features (max ~= 1/n), i.e. no feature dominates \u2014 the signature of trees splitting on noise rather than exploiting a real predictor."
+    },
+    "note": "No model beats buy-and-hold on mean Sharpe net of 5bps/side costs (best forecasting model: ARIMA 1.34 vs 1.83), and each wins on only 1/10 tickers. The bake-off closes Day 2's open objection: the failure was never the LSTM or the raw-window input \u2014 ARIMA, Prophet and XGBoost-on-engineered-features all land on the same random-walk floor. Sharpe correlates with market EXPOSURE, not with directional accuracy: these strategies are diluted buy-and-hold, and every trade they make is a tax on the market's drift."
   }
 }
