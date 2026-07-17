@@ -1,4 +1,4 @@
-"""Walk-forward backtesting harness (no look-ahead)."""
+"""Walk-forward backtesting harness (no look-ahead) + cost-aware trading sim."""
 from .walkforward import (
     Fold,
     expanding_window_folds,
@@ -8,6 +8,12 @@ from .walkforward import (
     rmse,
     directional_accuracy,
     walk_forward_predict,
+)
+from .trading import (
+    BacktestResult,
+    backtest_long_flat,
+    backtest_buy_and_hold,
+    TRADING_DAYS,
 )
 
 __all__ = [
@@ -19,4 +25,8 @@ __all__ = [
     "rmse",
     "directional_accuracy",
     "walk_forward_predict",
+    "BacktestResult",
+    "backtest_long_flat",
+    "backtest_buy_and_hold",
+    "TRADING_DAYS",
 ]
