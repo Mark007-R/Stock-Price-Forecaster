@@ -198,5 +198,93 @@
       "interpretation": "Gain is spread almost uniformly across features (max ~= 1/n), i.e. no feature dominates \u2014 the signature of trees splitting on noise rather than exploiting a real predictor."
     },
     "note": "No model beats buy-and-hold on mean Sharpe net of 5bps/side costs (best forecasting model: ARIMA 1.34 vs 1.83), and each wins on only 1/10 tickers. The bake-off closes Day 2's open objection: the failure was never the LSTM or the raw-window input \u2014 ARIMA, Prophet and XGBoost-on-engineered-features all land on the same random-walk floor. Sharpe correlates with market EXPOSURE, not with directional accuracy: these strategies are diluted buy-and-hold, and every trade they make is a tax on the market's drift."
+  },
+  "day04": {
+    "day": 4,
+    "phase": "2c \u2014 feature-engineering depth + multi-horizon",
+    "date_range": {
+      "start": "2021-01-01",
+      "end": "2025-01-01"
+    },
+    "tickers": [
+      "AAPL",
+      "MSFT",
+      "SPY",
+      "GOOGL",
+      "AMZN",
+      "META",
+      "NVDA",
+      "JPM",
+      "XOM",
+      "KO"
+    ],
+    "n_folds": 5,
+    "horizons": [
+      1,
+      5,
+      20
+    ],
+    "model": "XGBoost (same hyper-params as Day 3; only features/horizon vary)",
+    "split": "expanding-window walk-forward, refit per fold, no peeking",
+    "scoring_space": "cumulative forward return over the horizon",
+    "baselines": {
+      "rmse": "random walk (zero-return forecast)",
+      "direction": "always-up (positive every day)"
+    },
+    "configs": {
+      "base_h1": {
+        "horizon": 1,
+        "n_features": 18,
+        "mean_rmse_ratio_vs_random_walk": 1.1071,
+        "mean_dir_acc": 0.5164,
+        "mean_always_up_baseline": 0.5491,
+        "mean_dir_edge_over_baseline": -0.0327,
+        "std_dir_edge": 0.0777,
+        "tickers_with_positive_edge": 2
+      },
+      "ext_h1": {
+        "horizon": 1,
+        "n_features": 29,
+        "mean_rmse_ratio_vs_random_walk": 1.3054,
+        "mean_dir_acc": 0.4914,
+        "mean_always_up_baseline": 0.5491,
+        "mean_dir_edge_over_baseline": -0.0578,
+        "std_dir_edge": 0.0787,
+        "tickers_with_positive_edge": 1
+      },
+      "ext_h5": {
+        "horizon": 5,
+        "n_features": 29,
+        "mean_rmse_ratio_vs_random_walk": 1.4074,
+        "mean_dir_acc": 0.4605,
+        "mean_always_up_baseline": 0.5995,
+        "mean_dir_edge_over_baseline": -0.139,
+        "std_dir_edge": 0.1946,
+        "tickers_with_positive_edge": 1
+      },
+      "ext_h20": {
+        "horizon": 20,
+        "n_features": 29,
+        "mean_rmse_ratio_vs_random_walk": 1.3882,
+        "mean_dir_acc": 0.4678,
+        "mean_always_up_baseline": 0.6824,
+        "mean_dir_edge_over_baseline": -0.2145,
+        "std_dir_edge": 0.3216,
+        "tickers_with_positive_edge": 2
+      }
+    },
+    "feature_set_ablation_h1": {
+      "delta_dir_edge_ext_minus_base_pp": -2.503,
+      "delta_rmse_ratio_ext_minus_base": 0.1983,
+      "verdict": "Adding 11 calendar + regime features moved directional edge by -2.50 pp and RMSE-ratio by +0.1983 \u2014 both within fold noise. The new feature KIND does not rescue the signal; objection (1) fails."
+    },
+    "shap_group_share_h1": {
+      "base": 0.6357,
+      "calendar": 0.0675,
+      "regime": 0.2968
+    },
+    "shap_vs_gain_rank_corr": 0.325,
+    "new_features_shap_share": 0.3643,
+    "note": "Neither objection survives \u2014 both make the model WORSE. (1) Adding the 11 calendar + regime features at h=1 pushed directional edge from -3.3 pp (base) to -5.8 pp and RMSE-vs-random-walk from 1.11 to 1.31: more features to overfit, no new signal. Only 1/10 tickers shows a positive edge. (2) Lengthening the horizon does NOT open an edge \u2014 it widens the gap. The always-up baseline climbs with horizon on drift (54.9% -> 60.0% -> 68.2% at h=1/5/20), and the model falls further behind it (edge -5.8 -> -13.9 -> -21.5 pp). The model never beats the random-walk RMSE floor at any horizon (ratio 1.31 -> 1.41 -> 1.39, all > 1). SHAP delivers the sharper diagnosis Day 3's gain could not: the regime features absorb ~30% of total attribution \u2014 the model LEANS on them \u2014 yet the extended model performs worse, the textbook signature of overfitting new inputs to in-sample noise. And SHAP disagrees with gain on the ranking (rank corr ~0.33): when a model has real signal the two instruments agree; here they don't, the tell of trees splitting on noise. Consistent with the whole arc: daily-to-monthly equity direction is ~unforecastable from price-derived features, and neither richer features nor longer horizons change it."
   }
 }
