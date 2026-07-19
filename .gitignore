@@ -51,6 +51,7 @@ __pycache__
 # Cached market-data pulls: reproducible from yfinance via experiments/, and
 # raw price dumps do not belong in the repo. results/ and reports/ ARE tracked.
 data/eval/prices_*.csv
+data/eval/ohlcv_*.csv
 mlruns/
 models/*.h5
 models/*.keras
