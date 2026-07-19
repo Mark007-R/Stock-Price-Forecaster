@@ -16,6 +16,8 @@ import time
 import threading
 import uuid
 
+from src.models.intervals import build_interval_forecast
+
 warnings.filterwarnings('ignore')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -141,12 +143,21 @@ def run_prediction(job_id, ticker, num_days):
         current_price = float(data["Close"].iloc[-1])
         volatility    = float(data["Close"].pct_change().std() * 100)
 
-        if volatility < 2:
-            confidence, confidence_score = "High", 85
-        elif volatility < 4:
-            confidence, confidence_score = "Medium", 70
-        else:
-            confidence, confidence_score = "Low", 55
+        # ── Residual-based conformal prediction intervals ───────────────────
+        # Previously: confidence was hardcoded off the ASSET's volatility alone
+        # (vol<2→85, <4→70, else 55) — it never looked at the model's errors,
+        # so no outcome could ever prove an "85" wrong. Now the intervals come
+        # from the MODEL's own held-out test residuals via split-conformal:
+        # the 80% band is the finite-sample 80th percentile of |test error|,
+        # widened √h for h-step autoregressive forecasts, and "confidence" is
+        # the calibrated width of that band relative to the current price.
+        residuals = (predictions - y_test_actual).flatten()
+        iv = build_interval_forecast(
+            residuals=residuals,
+            point_forecasts=future_preds_inv.flatten(),
+            reference_price=current_price,
+        )
+        confidence, confidence_score = iv.confidence, iv.confidence_score
 
         # Build plain Python lists
         actual_list       = [round(float(v), 2) for v in y_test_actual.flatten()]
@@ -154,6 +165,10 @@ def run_prediction(job_id, ticker, num_days):
         dates_list        = data.index[-len(y_test_actual):].strftime('%Y-%m-%d').tolist()
         future_preds_list = [round(float(v), 2) for v in future_preds_inv.flatten()]
         future_dates_list = [d.strftime('%Y-%m-%d') for d in future_dates]
+        lower80_list = [round(float(v), 2) for v in iv.lower80]
+        upper80_list = [round(float(v), 2) for v in iv.upper80]
+        lower95_list = [round(float(v), 2) for v in iv.lower95]
+        upper95_list = [round(float(v), 2) for v in iv.upper95]
 
         # Pre-zip for Jinja2 (Jinja2 doesn't have zip built-in)
         actual_predicted_zip = list(zip(dates_list, actual_list, predicted_list))
@@ -177,6 +192,14 @@ def run_prediction(job_id, ticker, num_days):
                 "mape":                  round(mape, 2),
                 "confidence":            confidence,
                 "confidence_score":      confidence_score,
+                "interval_lower80":      lower80_list,
+                "interval_upper80":      upper80_list,
+                "interval_lower95":      lower95_list,
+                "interval_upper95":      upper95_list,
+                "interval_halfwidth80":  round(float(iv.q80), 2),
+                "interval_halfwidth95":  round(float(iv.q95), 2),
+                "interval_rel_width80":  round(float(iv.rel_width80), 4),
+                "interval_method":       "split-conformal on held-out test residuals, sqrt(h)-widened",
                 "data_points":           len(data),
                 "volatility":            round(volatility, 2),
             }

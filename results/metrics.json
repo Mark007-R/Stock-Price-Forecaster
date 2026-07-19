@@ -286,5 +286,65 @@
     "shap_vs_gain_rank_corr": 0.325,
     "new_features_shap_share": 0.3643,
     "note": "Neither objection survives \u2014 both make the model WORSE. (1) Adding the 11 calendar + regime features at h=1 pushed directional edge from -3.3 pp (base) to -5.8 pp and RMSE-vs-random-walk from 1.11 to 1.31: more features to overfit, no new signal. Only 1/10 tickers shows a positive edge. (2) Lengthening the horizon does NOT open an edge \u2014 it widens the gap. The always-up baseline climbs with horizon on drift (54.9% -> 60.0% -> 68.2% at h=1/5/20), and the model falls further behind it (edge -5.8 -> -13.9 -> -21.5 pp). The model never beats the random-walk RMSE floor at any horizon (ratio 1.31 -> 1.41 -> 1.39, all > 1). SHAP delivers the sharper diagnosis Day 3's gain could not: the regime features absorb ~30% of total attribution \u2014 the model LEANS on them \u2014 yet the extended model performs worse, the textbook signature of overfitting new inputs to in-sample noise. And SHAP disagrees with gain on the ranking (rank corr ~0.33): when a model has real signal the two instruments agree; here they don't, the tell of trees splitting on noise. Consistent with the whole arc: daily-to-monthly equity direction is ~unforecastable from price-derived features, and neither richer features nor longer horizons change it."
+  },
+  "day05": {
+    "day": 5,
+    "phase": "3 \u2014 champion integration + production refactor + conformal intervals",
+    "calibration_window_days": 120,
+    "evaluation": "rolling-calibration, sequential (interval built only from errors observed before the day it covers), on Day-3 walk-forward OOS ARIMA streams, 10 tickers",
+    "n_eval_points": 7600,
+    "empirical_coverage": {
+      "gaussian": {
+        "0.50": 0.5708,
+        "0.60": 0.6705,
+        "0.70": 0.7603,
+        "0.80": 0.8471,
+        "0.90": 0.9145,
+        "0.95": 0.9482,
+        "0.99": 0.9805
+      },
+      "conformal": {
+        "0.50": 0.5079,
+        "0.60": 0.6132,
+        "0.70": 0.7111,
+        "0.80": 0.8082,
+        "0.90": 0.9039,
+        "0.95": 0.9508,
+        "0.99": 0.9916
+      }
+    },
+    "old_heuristic": {
+      "claimed_mean": 0.8216,
+      "empirical_coverage_mean": 0.8613,
+      "per_ticker_gap_range": [
+        0.0053,
+        0.098
+      ],
+      "verdict": "its number was never a probability of anything; operationalised charitably it still misses its own claim"
+    },
+    "predictor_integration": {
+      "ticker": "AAPL",
+      "confidence": "Low",
+      "confidence_score": 80,
+      "halfwidth80_usd": 16.59,
+      "rel_width80": 0.0497,
+      "band_monotonicity_checks": "passed (nesting, point-inside, sqrt-h widening)"
+    },
+    "api": {
+      "endpoints_validated": [
+        "/health",
+        "/predict",
+        "/backtest",
+        "/indicators/{ticker}",
+        "/correlation"
+      ],
+      "schema_guards": "zero-cost backtest and unknown model both 422",
+      "backtest_arima_SPY": {
+        "strategy_sharpe": 1.767123,
+        "buy_and_hold_sharpe": 1.988803,
+        "beats_buy_and_hold": false
+      }
+    },
+    "requirements_txt": "now lists everything actually imported (yfinance/streamlit/plotly/vaderSentiment/fastapi/...)"
   }
 }
