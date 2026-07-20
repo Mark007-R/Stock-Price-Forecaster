@@ -346,5 +346,157 @@
       }
     },
     "requirements_txt": "now lists everything actually imported (yfinance/streamlit/plotly/vaderSentiment/fastapi/...)"
+  },
+  "day06": {
+    "day": 6,
+    "phase": "4 \u2014 Optuna sweep + failure-mode analysis + targeted fixes",
+    "tickers": [
+      "AAPL",
+      "MSFT",
+      "SPY",
+      "GOOGL",
+      "AMZN",
+      "META",
+      "NVDA",
+      "JPM",
+      "XOM",
+      "KO"
+    ],
+    "tune_tickers": [
+      "SPY",
+      "AAPL",
+      "NVDA",
+      "JPM",
+      "KO"
+    ],
+    "protocol": "40 TPE trials; objective = mean inner-val RMSE over the last 120 rows of each outer fold's train slice (5 tickers x 5 folds); outer test blocks untouched",
+    "optuna": {
+      "n_trials": 40,
+      "best_trial": 25,
+      "best_inner_rmse": 0.016504,
+      "default_inner_rmse": 0.017959,
+      "zero_floor_inner_rmse": 0.016558,
+      "best_beats_zero_floor": true,
+      "mean_abs_pred_best": 0.001068,
+      "mean_abs_pred_default": 0.005952,
+      "best_params": {
+        "n_estimators": 555,
+        "max_depth": 3,
+        "learning_rate": 0.00161,
+        "subsample": 0.615082,
+        "colsample_bytree": 0.502346,
+        "min_child_weight": 15.185263,
+        "reg_lambda": 7.825181,
+        "reg_alpha": 0.051148
+      },
+      "param_importances": {
+        "max_depth": 0.3579,
+        "learning_rate": 0.3255,
+        "n_estimators": 0.0847,
+        "subsample": 0.063,
+        "reg_alpha": 0.0564,
+        "min_child_weight": 0.056,
+        "colsample_bytree": 0.0548,
+        "reg_lambda": 0.0017
+      }
+    },
+    "final_walkforward": {
+      "xgb_default": {
+        "rmse_vs_zero": 1.1071,
+        "dir_acc": 0.5164,
+        "mean_abs_pred": 0.005684,
+        "sharpe": 1.22,
+        "sharpe_vs_bh": -0.61,
+        "exposure": 0.536,
+        "n_trades": 185.0
+      },
+      "xgb_tuned": {
+        "rmse_vs_zero": 1.0009,
+        "dir_acc": 0.5156,
+        "mean_abs_pred": 0.001115,
+        "sharpe": 0.95,
+        "sharpe_vs_bh": -0.88,
+        "exposure": 0.743,
+        "n_trades": 88.3
+      },
+      "xgb_tuned_volscale": {
+        "rmse_vs_zero": 1.0011,
+        "dir_acc": 0.5146,
+        "mean_abs_pred": 0.001227,
+        "sharpe": 1.083,
+        "sharpe_vs_bh": -0.747,
+        "exposure": 0.718,
+        "n_trades": 96.1
+      },
+      "xgb_tuned_decay": {
+        "rmse_vs_zero": 1.0023,
+        "dir_acc": 0.5313,
+        "mean_abs_pred": 0.00141,
+        "sharpe": 1.186,
+        "sharpe_vs_bh": -0.644,
+        "exposure": 0.761,
+        "n_trades": 59.8
+      }
+    },
+    "buy_and_hold_sharpe": 1.83,
+    "failure_modes": {
+      "by_regime": {
+        "bear": {
+          "n_days": 473,
+          "up_rate": 0.5962,
+          "acc_always_up": 0.5975,
+          "acc_arima": 0.5593,
+          "acc_xgboost_tuned": 0.5275
+        },
+        "bull": {
+          "n_days": 2986,
+          "up_rate": 0.5335,
+          "acc_always_up": 0.5355,
+          "acc_arima": 0.5277,
+          "acc_xgboost_tuned": 0.5136
+        },
+        "sideways": {
+          "n_days": 1541,
+          "up_rate": 0.5581,
+          "acc_always_up": 0.561,
+          "acc_arima": 0.5395,
+          "acc_xgboost_tuned": 0.516
+        }
+      },
+      "by_vol_bucket": {
+        "low": {
+          "n_days": 1670,
+          "up_rate": 0.5455,
+          "acc_always_up": 0.5488,
+          "acc_arima": 0.5367,
+          "acc_xgboost_tuned": 0.5235
+        },
+        "mid": {
+          "n_days": 1660,
+          "up_rate": 0.5289,
+          "acc_always_up": 0.5312,
+          "acc_arima": 0.5172,
+          "acc_xgboost_tuned": 0.4961
+        },
+        "high": {
+          "n_days": 1670,
+          "up_rate": 0.5665,
+          "acc_always_up": 0.5675,
+          "acc_arima": 0.5489,
+          "acc_xgboost_tuned": 0.5273
+        }
+      }
+    },
+    "tuned_params_shipped": {
+      "n_estimators": 555,
+      "max_depth": 3,
+      "learning_rate": 0.00161,
+      "subsample": 0.615082,
+      "colsample_bytree": 0.502346,
+      "min_child_weight": 15.185263,
+      "reg_lambda": 7.825181,
+      "reg_alpha": 0.051148,
+      "random_state": 42
+    }
   }
 }
