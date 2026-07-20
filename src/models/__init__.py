@@ -29,6 +29,9 @@ MODELS = {
                     "ARIMA, order by AIC on train; Day-3 champion forecaster"),
     "xgboost":     (xgb.predict_fold,
                     "XGBoost on 18 no-look-ahead features"),
+    "xgboost_tuned": (xgb.predict_fold_tuned,
+                      "Day-6 Optuna params + time-decay weights — best XGB "
+                      "dir-acc (0.531), still below always-up (0.549)"),
     "lstm":        (lstm.predict_fold,
                     "LSTM(32) on standardised returns — predictor.py's arch"),
 }
