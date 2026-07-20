@@ -1,4 +1,4 @@
-# 📈 StockAI
+# Stock-Price-Forecaster
 
 > 🔗 **Live demo:** https://iambatman07-stockai.hf.space · [HF Space](https://huggingface.co/spaces/IamBatman07/StockAI)
 
@@ -95,8 +95,8 @@ project-root/
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/Mark007-R/StockAI.git
-cd StockAI
+git clone https://github.com/Mark007-R/Stock-Price-Forecaster.git
+cd Stock-Price-Forecaster
 ```
 
 ### 2. Create and activate a virtual environment
