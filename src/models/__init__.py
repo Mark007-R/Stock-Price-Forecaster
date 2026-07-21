@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from . import persistence, arima, xgb, lstm  # noqa: E402
+from . import persistence, arima, xgb, lstm, patchtst  # noqa: E402
 
 # name -> (module, human description)
 MODELS = {
@@ -34,6 +34,9 @@ MODELS = {
                       "dir-acc (0.531), still below always-up (0.549)"),
     "lstm":        (lstm.predict_fold,
                     "LSTM(32) on standardised returns — predictor.py's arch"),
+    "patchtst":    (patchtst.predict_fold,
+                    "PatchTST-style transformer (17.7k params) — Day-7 "
+                    "negative result: RMSE 15.9% WORSE than predicting zero"),
 }
 
 CHAMPION = "arima"  # best Sharpe among actual forecasters, Day 3
