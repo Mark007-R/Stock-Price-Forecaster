@@ -1,0 +1,5 @@
+system,setup,dir_acc,rmse_vs_zero,sharpe_net_5bps,latency_ms_per_pred,cost_per_pred_usd,notes
+naive_notebook (pre-sprint),"LSTM on price level, scaler fit on FULL series (leaky), single 80/20 holdout",0.483,,,,0.0,claimed price-RMSE 6.58 was leakage-inflated; honest 6.98; persistence 3.80 beats it on 10/10 tickers
+full_pipeline (this sprint),"returns target, leakage-fixed scaling, 18 causal features, ARIMA champion, conformal intervals, walk-forward, costs",0.5345381526104418,0.9994236473984189,1.3428042379246459,16.2,0.0,honest verdict: still loses to B&H Sharpe 1.83
+"Claude (this session), zero-shot","anonymized 30d returns + indicator panel, 200 OOS samples, no catalog of history",0.5,,,2000.0,0.02,"CI95 [0.431,0.569], p=1.00 vs coin; latency/cost are ESTIMATES (in-session run); mean captured -3.7 bps/day vs B&H -2.1"
+"GPT-5.4, zero-shot",not run — no API key in the autonomous environment,,,,,,reported as not-run rather than estimated
