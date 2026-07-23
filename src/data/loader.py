@@ -21,19 +21,95 @@ Design choices
   between two components of the app.
 * **Retries with backoff** because yfinance flakes; a failed fetch raises
   instead of returning an empty frame (never log success on failure).
+* **Optional Redis in front of the disk cache (Day 9).** A single process is
+  served perfectly well by the local CSV cache; Redis exists for the Docker
+  deployment, where the API and the dashboard are separate containers with
+  separate filesystems and would otherwise each hit yfinance for the same
+  series. Redis is opt-in via ``REDIS_URL`` and degrades silently to the
+  disk-then-network path — an unreachable cache must never take the service
+  down with it.
 """
 from __future__ import annotations
 
+import io
+import logging
 import os
 import time
 
 import numpy as np
 import pandas as pd
 
+logger = logging.getLogger(__name__)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DEFAULT_CACHE = os.path.join(ROOT, "data", "eval")
 
 OHLCV_COLS = ["Open", "High", "Low", "Close", "Volume"]
+
+# Historical daily bars for an explicit [start, end) range are effectively
+# immutable, but ranges whose end is still in the future fill in as days pass —
+# a finite TTL lets those refresh instead of freezing at first fetch.
+REDIS_TTL_SECONDS = 7 * 24 * 3600
+
+_redis_client = None
+_redis_failed = False   # one bad connection disables Redis for this process
+
+
+def _redis():
+    """Redis client from ``REDIS_URL``, or None (unset / previously failed).
+
+    The client is created lazily and verified with a ping so that a container
+    started before its Redis dependency simply falls back to disk instead of
+    erroring on every request.
+    """
+    global _redis_client, _redis_failed
+    url = os.environ.get("REDIS_URL")
+    if not url or _redis_failed:
+        return None
+    if _redis_client is None:
+        try:
+            import redis  # imported lazily — not required outside Docker
+            _redis_client = redis.Redis.from_url(
+                url, socket_connect_timeout=2, socket_timeout=2)
+            _redis_client.ping()
+            logger.info("price cache: Redis connected (%s)", url)
+        except Exception as e:  # noqa: BLE001 — any failure means "no Redis"
+            logger.warning("price cache: Redis unavailable (%s) — disk only", e)
+            _redis_client, _redis_failed = None, True
+            return None
+    return _redis_client
+
+
+def redis_status() -> str:
+    """'connected' / 'unavailable' / 'disabled' — surfaced by /health."""
+    if not os.environ.get("REDIS_URL"):
+        return "disabled"
+    return "connected" if _redis() is not None else "unavailable"
+
+
+def _redis_get(key: str) -> pd.DataFrame | None:
+    r = _redis()
+    if r is None:
+        return None
+    try:
+        raw = r.get(key)
+    except Exception:  # noqa: BLE001
+        return None
+    if raw is None:
+        return None
+    return pd.read_csv(io.BytesIO(raw), parse_dates=["date"], index_col="date")
+
+
+def _redis_put(key: str, df: pd.DataFrame) -> None:
+    r = _redis()
+    if r is None:
+        return
+    try:
+        buf = io.StringIO()
+        df.to_csv(buf)
+        r.set(key, buf.getvalue().encode(), ex=REDIS_TTL_SECONDS)
+    except Exception:  # noqa: BLE001 — cache writes are best-effort
+        pass
 
 
 def _cache_path(cache_dir: str, ticker: str, start: str, end: str, kind: str) -> str:
@@ -54,11 +130,18 @@ def load_ohlcv(
     fetched — callers must not treat an empty result as success.
     """
     ticker = ticker.upper().strip()
+    rkey = f"stockai:ohlcv:{ticker}:{start}:{end}"
+
+    cached = _redis_get(rkey)
+    if cached is not None:
+        return cached
+
     if cache_dir:
         os.makedirs(cache_dir, exist_ok=True)
         path = _cache_path(cache_dir, ticker, start, end, "ohlcv")
         if os.path.exists(path):
             df = pd.read_csv(path, parse_dates=["date"], index_col="date")
+            _redis_put(rkey, df)   # promote, so sibling containers skip yfinance
             return df
 
     import yfinance as yf  # imported lazily so offline cache-hits need no network stack
@@ -77,6 +160,7 @@ def load_ohlcv(
                 out = out.astype(float)
                 if cache_dir:
                     out.to_csv(path)
+                _redis_put(rkey, out)
                 return out
         except Exception as e:  # noqa: BLE001 — yfinance raises many types
             last_err = e

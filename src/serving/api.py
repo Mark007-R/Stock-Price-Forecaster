@@ -19,15 +19,27 @@ Design stances (all downstream of Days 1–4):
 * Endpoints are async; the numeric work is offloaded to the threadpool so the
   event loop never blocks on an ARIMA fit.
 
+Day 9 (production wrapper) additions:
+* **Per-request telemetry** — one JSON line per request (path, status,
+  latency ms) appended to ``logs/requests.jsonl``; the ops dashboard tails it.
+* **/backtest can record itself to MLflow** (``log_mlflow: true``) via the
+  same ``src.tracking`` machinery the CLI uses, so API-triggered runs and
+  scripted runs land in one file store.
+* **/health reports the Redis price-cache status** — "disabled" outside
+  Docker is the expected, correct answer, not a failure.
+
 Run:  uvicorn src.serving.api:app --port 8000
 """
 from __future__ import annotations
 
+import json
+import os
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
@@ -35,7 +47,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.data.loader import load_prices, load_ohlcv                     # noqa: E402
+from src.data.loader import load_prices, load_ohlcv, redis_status       # noqa: E402
 from src.models import MODELS, CHAMPION, get_model, make_context        # noqa: E402
 from src.models.arima import forecast_returns                            # noqa: E402
 from src.models.intervals import conformal_halfwidth                     # noqa: E402
@@ -55,10 +67,39 @@ DISCLAIMER = (
 
 app = FastAPI(
     title="StockAI honest forecasting API",
-    version="0.5.0",
+    version="0.9.0",
     description="Walk-forward-evaluated forecasts with conformal intervals, "
                 "cost-aware backtests, indicators and correlations.",
 )
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Per-request telemetry — append-only JSONL, tailed by the ops dashboard.
+# ─────────────────────────────────────────────────────────────────────────────
+TELEMETRY_DIR = Path(os.environ.get("STOCKAI_LOG_DIR", ROOT / "logs"))
+TELEMETRY_PATH = TELEMETRY_DIR / "requests.jsonl"
+
+
+@app.middleware("http")
+async def telemetry(request: Request, call_next):
+    t0 = time.perf_counter()
+    status = 500
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        return response
+    finally:
+        try:
+            TELEMETRY_DIR.mkdir(parents=True, exist_ok=True)
+            with open(TELEMETRY_PATH, "a", encoding="utf-8") as f:
+                f.write(json.dumps({
+                    "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status": status,
+                    "latency_ms": round((time.perf_counter() - t0) * 1000, 1),
+                }) + "\n")
+        except OSError:
+            pass   # telemetry must never take a request down with it
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -96,6 +137,8 @@ class BacktestRequest(BaseModel):
                             description="Per-side costs; zero-cost backtests are refused")
     start: str = DEFAULT_START
     end: str = DEFAULT_END
+    log_mlflow: bool = Field(
+        False, description="Record this run (params/metrics/artifacts) to MLflow")
 
 
 class BacktestResponse(BaseModel):
@@ -109,6 +152,7 @@ class BacktestResponse(BaseModel):
     strategy: dict
     buy_and_hold: dict
     beats_buy_and_hold_sharpe: bool
+    mlflow_run_id: str | None = None
     disclaimer: str
 
 
@@ -176,7 +220,10 @@ def _backtest_core(req: BacktestRequest) -> dict:
 
     folds = expanding_window_folds(len(prices), n_folds=req.n_folds)
     assert_no_peeking(folds, n_samples=len(prices))
-    ctx = make_context(prices, dates, with_features=(req.model == "xgboost"))
+    # startswith, not ==: "xgboost_tuned" (Day 6) needs the feature frame too —
+    # the exact-match version 422'd every tuned-model backtest.
+    ctx = make_context(prices, dates,
+                       with_features=req.model.startswith("xgboost"))
 
     fold_results = walk_forward_predict(
         prices, lambda p, f: model_fn(p, f, ctx), folds)
@@ -188,6 +235,18 @@ def _backtest_core(req: BacktestRequest) -> dict:
     bh = backtest_buy_and_hold(actual_all, cost_bps=req.cost_bps)
 
     dir_accs = [r["dir_acc"] for r in fold_results if not np.isnan(r["dir_acc"])]
+
+    # Optional MLflow record. It re-runs the same deterministic pipeline via
+    # src.tracking (identical folds/costs), so the logged run matches this
+    # response; the small duplicate compute buys one code path for CLI + API.
+    mlflow_run_id = None
+    if req.log_mlflow:
+        from src.tracking.mlflow_runs import track_walkforward_run
+        summary = track_walkforward_run(
+            req.ticker, req.model, n_folds=req.n_folds,
+            cost_bps=req.cost_bps, start=req.start, end=req.end)
+        mlflow_run_id = summary["run_id"]
+
     return {
         "ticker": req.ticker.upper(),
         "model": req.model,
@@ -199,6 +258,7 @@ def _backtest_core(req: BacktestRequest) -> dict:
         "strategy": {k: round(float(v), 6) for k, v in bt.as_dict().items()},
         "buy_and_hold": {k: round(float(v), 6) for k, v in bh.as_dict().items()},
         "beats_buy_and_hold_sharpe": bool(bt.sharpe > bh.sharpe),
+        "mlflow_run_id": mlflow_run_id,
         "disclaimer": DISCLAIMER,
     }
 
@@ -270,7 +330,13 @@ def _correlation_core(tickers: list[str], start: str, end: str) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "models": sorted(MODELS), "champion": CHAMPION}
+    return {
+        "status": "ok",
+        "models": sorted(MODELS),
+        "champion": CHAMPION,
+        "price_cache_redis": redis_status(),
+        "telemetry": str(TELEMETRY_PATH),
+    }
 
 
 @app.post("/predict", response_model=PredictResponse)
@@ -287,6 +353,14 @@ async def backtest(req: BacktestRequest) -> BacktestResponse:
         return BacktestResponse(**await run_in_threadpool(_backtest_core, req))
     except KeyError as e:
         raise HTTPException(status_code=422, detail=str(e.args[0]))
+    except ImportError as e:
+        # The slim serving image ships without TensorFlow on purpose (the
+        # champion is ARIMA). Say so, instead of a bare 500.
+        raise HTTPException(
+            status_code=501,
+            detail=f"Model '{req.model}' needs an optional dependency not in "
+                   f"this serving image ({e.name}). Deep models are research-"
+                   "only here — use the full requirements.txt environment.")
     except (ValueError, RuntimeError) as e:
         raise HTTPException(status_code=422, detail=str(e))
 
