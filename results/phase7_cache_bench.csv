@@ -1,0 +1,4 @@
+tier,reps,p50_ms,p95_ms,n_rows,shared_across_containers
+yfinance (cold fetch),1,2352.7,2352.7,252,False
+disk CSV cache,20,4.9,6.4,1005,False
+Redis GET (redis),20,5.4,7.7,1005,True

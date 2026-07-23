@@ -53,6 +53,7 @@ __pycache__
 data/eval/prices_*.csv
 data/eval/ohlcv_*.csv
 mlruns/
+logs/
 models/*.h5
 models/*.keras
 models/*.joblib

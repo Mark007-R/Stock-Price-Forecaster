@@ -1,0 +1,58 @@
+[
+  {
+    "run_id": "d13d9114596b4c2897ca69b84ab1a6d3",
+    "ticker": "AAPL",
+    "model": "persistence",
+    "n_folds": 5,
+    "oos_days": 500,
+    "dir_acc_mean": 0.0,
+    "dir_acc_always_up": 0.562,
+    "strat_sharpe_net": 0.0,
+    "bh_sharpe_net": 1.9596,
+    "beats_buy_and_hold_sharpe": false,
+    "fit_seconds": 0.0,
+    "wall_seconds": 7.5
+  },
+  {
+    "run_id": "f18b3f140c7f45fc80625bd356a40a40",
+    "ticker": "MSFT",
+    "model": "persistence",
+    "n_folds": 5,
+    "oos_days": 500,
+    "dir_acc_mean": 0.0,
+    "dir_acc_always_up": 0.546,
+    "strat_sharpe_net": 0.0,
+    "bh_sharpe_net": 1.6486,
+    "beats_buy_and_hold_sharpe": false,
+    "fit_seconds": 0.0,
+    "wall_seconds": 0.39
+  },
+  {
+    "run_id": "e347b1eeb3b64ff686f2b6678b3920f7",
+    "ticker": "XOM",
+    "model": "xgboost_tuned",
+    "n_folds": 5,
+    "oos_days": 500,
+    "dir_acc_mean": 0.5181,
+    "dir_acc_always_up": 0.502,
+    "strat_sharpe_net": 0.4862,
+    "bh_sharpe_net": 0.1701,
+    "beats_buy_and_hold_sharpe": true,
+    "fit_seconds": 0.89,
+    "wall_seconds": 1.22
+  },
+  {
+    "run_id": "a0674b7912d441b192df4dcb63c1512c",
+    "ticker": "KO",
+    "model": "xgboost_tuned",
+    "n_folds": 5,
+    "oos_days": 500,
+    "dir_acc_mean": 0.5245,
+    "dir_acc_always_up": 0.518,
+    "strat_sharpe_net": 0.288,
+    "bh_sharpe_net": 0.1947,
+    "beats_buy_and_hold_sharpe": true,
+    "fit_seconds": 1.65,
+    "wall_seconds": 2.06
+  }
+]

@@ -1,0 +1,6 @@
+model,runs,mean_dir_acc,mean_sharpe,mean_bh_sharpe,beats_bh,mean_wall_s
+arima,10,0.5345,1.3428,1.8302,1,11.842
+momentum,10,0.5114,0.9041,1.8302,1,0.38
+persistence,10,0.0,0.0,1.8302,0,1.121
+xgboost,10,0.5164,1.2201,1.8302,1,1.701
+xgboost_tuned,10,0.5313,1.1863,1.8302,2,1.425

@@ -1,0 +1,55 @@
+# StockAI production stack (Day 9):
+#   redis      — shared price cache so the API and dashboard containers don't
+#                each hit yfinance for the same series (locally, the disk
+#                cache already covers a single process; Redis earns its keep
+#                only across containers/replicas)
+#   api        — FastAPI honest-forecasting service on :8000
+#   dashboard  — Streamlit ops dashboard on :8501
+#
+# mlruns/ + logs/ + data/eval/ are host mounts so MLflow runs, telemetry and
+# cached prices survive container restarts and stay inspectable from the host
+# (`mlflow ui --backend-store-uri mlruns`).
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: .
+    image: stockai-serving
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./data/eval:/app/data/eval
+      - ./mlruns:/app/mlruns
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  dashboard:
+    image: stockai-serving   # same build as api; compose builds it once there
+    command: streamlit run src/serving/dashboard.py
+      --server.port 8501 --server.address 0.0.0.0 --server.headless true
+    ports:
+      - "8501:8501"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./data/eval:/app/data/eval
+      - ./mlruns:/app/mlruns
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
