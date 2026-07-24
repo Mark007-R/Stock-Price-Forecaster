@@ -43,7 +43,7 @@ instance/
 
 # --- Caches ---
 .cache/
-pytest_c_
+.pytest_cache/
 .mypy_cache/
 __pycache__
 
