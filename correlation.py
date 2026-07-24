@@ -102,11 +102,16 @@ def analyze():
                     error_msg += f" Failed tickers: {', '.join(failed_tickers)}"
                 return render_template("correlation.html", error=error_msg)
 
+            # A correlation needs enough pairwise overlap to mean anything: with
+            # only 2 points every correlation is exactly ±1 and would top the
+            # rankings spuriously. 30 trading days (~6 weeks) is the floor.
+            MIN_OVERLAP = 30
+
             close_data = close_data.dropna(how="all")
             valid_columns = [
                 column
                 for column in close_data.columns
-                if close_data[column].dropna().shape[0] >= 2
+                if close_data[column].dropna().shape[0] >= MIN_OVERLAP
             ]
             close_data = close_data[valid_columns]
 
@@ -114,7 +119,7 @@ def analyze():
                 return render_template("correlation.html",
                     error="Not enough overlapping data found for the selected tickers and date range")
 
-            corr_matrix = close_data.corr(min_periods=2)
+            corr_matrix = close_data.corr(min_periods=MIN_OVERLAP)
             while len(corr_matrix.columns) >= 2 and corr_matrix.isna().to_numpy().any():
                 missing_counts = corr_matrix.isna().sum()
                 drop_column = missing_counts.sort_values(ascending=False).index[0]
