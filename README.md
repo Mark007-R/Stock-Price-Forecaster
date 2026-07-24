@@ -5,7 +5,7 @@ it real?** The answer — measured, walk-forward, net of transaction costs — i
 the honest result this repo now reports: *the best forecaster in it loses to
 buy-and-hold, and every number here says so out loud.*
 
-> 🔗 **Live demo:** https://iambatman07-stockai.hf.space · [HF Space](https://huggingface.co/spaces/IamBatman07/StockAI)
+> 🔗 **Live demo:** https://iambatman07-stock-price-forecaster.hf.space · [HF Space](https://huggingface.co/spaces/IamBatman07/Stock-Price-Forecaster)
 >
 > ⚡ **60-second local demo:** `python demo.py` (offline, ~8s — talk-track in [docs/DEMO.md](docs/DEMO.md))
 
