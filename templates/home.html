@@ -66,9 +66,9 @@
     </div>
     <div class="col-md-3 fade-up-4">
         <div class="metric-tile {% if confidence == 'High' %}green{% elif confidence == 'Low' %}red{% else %}coral{% endif %}">
-            <div class="label">Confidence</div>
+            <div class="label">Confidence · calibrated</div>
             <div class="value" style="font-size:1.3rem;">{{ confidence }}</div>
-            <div class="sub">Score {{ confidence_score }}% · Vol {{ volatility }}%</div>
+            <div class="sub">80% band ±${{ interval_halfwidth80 }} · ±{{ '%.1f'|format(interval_rel_width80 * 100) }}% of price</div>
         </div>
     </div>
 </div>
@@ -112,9 +112,14 @@
 
 <div class="card mb-4 fade-up">
     <div class="card-body">
-        <div class="card-title">Future Forecast — {{ future_preds|length }} Day Horizon</div>
+        <div class="card-title">Future Forecast — {{ future_preds|length }} Day Horizon · 80% / 95% Prediction Bands</div>
         <div style="position:relative;height:380px;">
             <canvas id="futureChart"></canvas>
+        </div>
+        <div class="mt-3" style="font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);">
+            Bands: {{ interval_method }} — derived from the model's own held-out errors,
+            not the asset's volatility. The 80% band should contain ~80% of outcomes;
+            widening with horizon is the model admitting compounding uncertainty.
         </div>
     </div>
 </div>
@@ -125,14 +130,16 @@
         <div class="table-responsive" style="max-height:400px;overflow-y:auto;">
             <table class="table table-hover">
                 <thead>
-                    <tr><th>Date</th><th>Forecast</th><th>Δ Current</th><th>% Change</th></tr>
+                    <tr><th>Date</th><th>Forecast</th><th>80% Interval</th><th>95% Interval</th><th>Δ Current</th><th>% Change</th></tr>
                 </thead>
                 <tbody>
                     {% for row in future_zip %}
-                    {% set d = row[0] %}{% set p = row[1] %}
+                    {% set d = row[0] %}{% set p = row[1] %}{% set i = loop.index0 %}
                     <tr>
                         <td>{{ d }}</td>
                         <td>${{ '%.2f'|format(p) }}</td>
+                        <td style="font-family:var(--mono);font-size:0.78rem;">${{ '%.2f'|format(interval_lower80[i]) }} – ${{ '%.2f'|format(interval_upper80[i]) }}</td>
+                        <td style="font-family:var(--mono);font-size:0.78rem;color:var(--text-muted);">${{ '%.2f'|format(interval_lower95[i]) }} – ${{ '%.2f'|format(interval_upper95[i]) }}</td>
                         <td class="{% if (p-current_price) > 0 %}text-success{% else %}text-danger{% endif %}">${{ '%.2f'|format(p-current_price) }}</td>
                         <td>
                             {% set pct = ((p-current_price)/current_price * 100) %}
@@ -185,15 +192,24 @@ new Chart(document.getElementById('futureChart'), {
     type: 'line',
     data: {
         labels: {{ future_dates|tojson }},
-        datasets: [{ label: 'Forecast', data: {{ future_preds|tojson }}, borderColor: CORAL, backgroundColor: 'rgba(218,119,86,0.08)', tension: 0.4, fill: true, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: CORAL, pointBorderColor: '#0a0b0d', pointBorderWidth: 2 }]
+        datasets: [
+            // Conformal bands (drawn first so the forecast line sits on top).
+            { label: '95% lower', data: {{ interval_lower95|tojson }}, borderColor: 'rgba(94,114,228,0.25)', borderWidth: 1, borderDash: [3,3], pointRadius: 0, fill: false },
+            { label: '95% band',  data: {{ interval_upper95|tojson }}, borderColor: 'rgba(94,114,228,0.25)', backgroundColor: 'rgba(94,114,228,0.07)', borderWidth: 1, borderDash: [3,3], pointRadius: 0, fill: '-1' },
+            { label: '80% lower', data: {{ interval_lower80|tojson }}, borderColor: 'rgba(94,114,228,0.45)', borderWidth: 1, pointRadius: 0, fill: false },
+            { label: '80% band',  data: {{ interval_upper80|tojson }}, borderColor: 'rgba(94,114,228,0.45)', backgroundColor: 'rgba(94,114,228,0.14)', borderWidth: 1, pointRadius: 0, fill: '-1' },
+            { label: 'Forecast', data: {{ future_preds|tojson }}, borderColor: CORAL, backgroundColor: 'rgba(218,119,86,0.08)', tension: 0.4, fill: false, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: CORAL, pointBorderColor: '#0a0b0d', pointBorderWidth: 2 }
+        ]
     },
-    options: { ...chartOpts(), plugins: { ...chartOpts().plugins, tooltip: { ...chartOpts().plugins.tooltip, callbacks: { label: c => 'Forecast: $' + c.parsed.y.toFixed(2) } } } }
+    options: { ...chartOpts(), plugins: { ...chartOpts().plugins,
+        legend: { labels: { usePointStyle: true, padding: 20, filter: item => !item.text.endsWith('lower') } },
+        tooltip: { ...chartOpts().plugins.tooltip, callbacks: { label: c => c.dataset.label + ': $' + c.parsed.y.toFixed(2) } } } }
 });
 
 function downloadCSV() {
-    let csv = 'Date,Type,Price\n';
-    {% for row in actual_predicted_zip %}csv += '{{ row[0] }},Actual,{{ row[1] }}\n{{ row[0] }},Predicted,{{ row[2] }}\n';{% endfor %}
-    {% for row in future_zip %}csv += '{{ row[0] }},Forecast,{{ row[1] }}\n';{% endfor %}
+    let csv = 'Date,Type,Price,Lower80,Upper80,Lower95,Upper95\n';
+    {% for row in actual_predicted_zip %}csv += '{{ row[0] }},Actual,{{ row[1] }},,,,\n{{ row[0] }},Predicted,{{ row[2] }},,,,\n';{% endfor %}
+    {% for row in future_zip %}{% set i = loop.index0 %}csv += '{{ row[0] }},Forecast,{{ row[1] }},{{ interval_lower80[i] }},{{ interval_upper80[i] }},{{ interval_lower95[i] }},{{ interval_upper95[i] }}\n';{% endfor %}
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], {type:'text/csv'})), download: '{{ ticker }}_predictions.csv' });
     a.click();
 }
