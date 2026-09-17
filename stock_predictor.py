@@ -10,13 +10,17 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib.colors import LinearSegmentedColormap
 import time
 
 # Import the SentimentIntensityAnalyzer
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
+import ui_theme
+
 # Streamlit Page Config
 st.set_page_config(page_title="Stock Predictor", page_icon="📈", layout="wide")
+ui_theme.apply_theme()
 
 # API Keys (Replace with your own)
 ALPHA_VANTAGE_API_KEY = "UV0H8FN0FJWS5WVK"
@@ -26,64 +30,28 @@ st.sidebar.title("🔍 Navigation")
 selected_page = st.sidebar.selectbox("Select a Page", [
     "📈 Stock Predictor", "📉 Historical Analysis", "📊 Stock Correlation Dashboard"])
 
-# Add custom CSS for stylish page
-st.markdown("""
-    <style>
-        /* General Background and Container Styling */
-        .css-1d391kg {
-            background-color: #f4f4f4;  /* Light grey background */
-            color: black;
-        }
-        .block-container {
-            padding: 2rem;
-        }
+# Chart colours on the night ground: ui_theme.colorway() is
+# [accent, warm neutral, accent-soft, sand, cream, muted]; candles use the night
+# status colours (--ok / --bad) so up/down keep their meaning.
+_CHART = ui_theme.colorway()
+_UP, _DOWN = "#6fbf73", "#f07167"
+_TITLE_FONT = dict(family="Fraunces, Georgia, serif", color=ui_theme.INK, size=16)
+_CORR_CMAP = LinearSegmentedColormap.from_list(
+    "night_diverging", [_DOWN, ui_theme.LINE_STRONG, ui_theme.ACCENT])
 
-        /* Header and Title Styling */
-        .stTitle {
-            color: black;
-            font-weight: bold;
-        }
-        .stSubheader {
-            color: black;
-        }
 
-        /* Button Styling */
-        .stButton>button {
-            background-color:#f0f0f0;  /* Grey background */
-            color: black;
-            border-radius: 10px;
-            font-weight: bold;
-            padding: 0.5rem 1rem;
-        }
+def _night_mpl(fig):
+    """matplotlib counterpart of ui_theme.style_fig: night ground, warm hairlines, ink text."""
+    fig.patch.set_facecolor(ui_theme.PAPER)
+    for axis in fig.axes:
+        axis.set_facecolor(ui_theme.CARD)
+        axis.tick_params(colors=ui_theme.LINE_STRONG, labelcolor=ui_theme.INK_2)
+        axis.xaxis.label.set_color(ui_theme.INK_2)
+        axis.yaxis.label.set_color(ui_theme.INK_2)
+        axis.title.set_color(ui_theme.INK)
+        for spine in axis.spines.values():
+            spine.set_color(ui_theme.LINE)
 
-        /* Metric Styling */
-        .stMetric {
-            background-color: #f0f0f0;
-            border-radius: 10px;
-            padding: 1rem;
-            color: black;
-        }
-
-        /* Sidebar Styling */
-        .css-18e3th9 {
-            background-color: #f4f4f4;
-            color: black;
-        }
-
-        /* Links and Text Styling */
-        a {
-            color: #1f77b4;  /* Blue for links */
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* Specific Element Styling */
-        .css-1j2nfhk {
-            background-color: #f4f4f4;
-        }
-    </style>
-""", unsafe_allow_html=True)
 
 # Helper function to fetch stock data using Alpha Vantage
 @st.cache_data(ttl=3600)  # Cache for 1 hour
@@ -206,7 +174,7 @@ if selected_page == "📈 Stock Predictor":
             st.info("💡 Enter a valid ticker and click 'Predict' to see current price")
 
     # Predict Button
-    if st.button("🚀 Predict Stock Price"):
+    if st.button("🚀 Predict Stock Price", type="primary"):
         with st.spinner("🔄 Fetching data and training model..."):
             try:
                 # Fetch stock data from Alpha Vantage
@@ -301,10 +269,11 @@ if selected_page == "📈 Stock Predictor":
                 st.subheader(f"📉 {ticker} Stock Price Prediction")
                 fig = go.Figure()
                 fig.add_trace(go.Scatter(x=data.index[-len(y_test_actual):], y=y_test_actual.flatten(),
-                                         mode="lines", name="Actual Price", line=dict(color="blue")))
+                                         mode="lines", name="Actual Price", line=dict(color=_CHART[0])))
                 fig.add_trace(go.Scatter(x=data.index[-len(y_test_actual):], y=predictions.flatten(),
-                                         mode="lines", name="Predicted Price", line=dict(color="red")))
-                st.plotly_chart(fig, use_container_width=True)
+                                         mode="lines", name="Predicted Price", line=dict(color=_CHART[3], dash="dash")))
+                ui_theme.style_fig(fig)
+                st.plotly_chart(fig, use_container_width=True, theme=None)
 
                 # Future Prediction Table & Graph
                 future_dates = [data.index[-1] +
@@ -318,26 +287,27 @@ if selected_page == "📈 Stock Predictor":
 
                 fig_future = go.Figure()
                 fig_future.add_trace(go.Scatter(x=future_df["Date"], y=future_df["Predicted Price"],
-                                                mode="lines+markers", name="Future Prediction", line=dict(color="green")))
-                st.plotly_chart(fig_future, use_container_width=True)
+                                                mode="lines+markers", name="Future Prediction", line=dict(color=_CHART[0])))
+                ui_theme.style_fig(fig_future)
+                st.plotly_chart(fig_future, use_container_width=True, theme=None)
 
                 # 📊 Candlestick Chart with Indicators
                 st.subheader("📊 Candlestick Chart with Indicators")
                 fig = go.Figure(data=[go.Candlestick(
                     x=data.index,
                     open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'],
-                    increasing_line_color='green', decreasing_line_color='red'
+                    increasing_line_color=_UP, decreasing_line_color=_DOWN
                 )])
 
                 # Simple Moving Average (SMA)
                 data["SMA50"] = data["Close"].rolling(window=50).mean()
                 fig.add_trace(go.Scatter(
-                    x=data.index, y=data["SMA50"], mode="lines", name="SMA 50", line=dict(color="orange")))
+                    x=data.index, y=data["SMA50"], mode="lines", name="SMA 50", line=dict(color=_CHART[3])))
 
                 # Exponential Moving Average (EMA)
                 data["EMA20"] = data["Close"].ewm(span=20, adjust=False).mean()
                 fig.add_trace(go.Scatter(
-                    x=data.index, y=data["EMA20"], mode="lines", name="EMA 20", line=dict(color="purple")))
+                    x=data.index, y=data["EMA20"], mode="lines", name="EMA 20", line=dict(color=_CHART[4])))
 
                 # Bollinger Bands
                 rolling_mean = data["Close"].rolling(window=20).mean()
@@ -345,12 +315,13 @@ if selected_page == "📈 Stock Predictor":
                 data["Upper Band"] = rolling_mean + (rolling_std * 2)
                 data["Lower Band"] = rolling_mean - (rolling_std * 2)
                 fig.add_trace(go.Scatter(
-                    x=data.index, y=data["Upper Band"], mode="lines", name="Upper Bollinger Band", line=dict(color="gray", dash="dash")))
+                    x=data.index, y=data["Upper Band"], mode="lines", name="Upper Bollinger Band", line=dict(color=_CHART[5], dash="dash")))
                 fig.add_trace(go.Scatter(
-                    x=data.index, y=data["Lower Band"], mode="lines", name="Lower Bollinger Band", line=dict(color="gray", dash="dash")))
+                    x=data.index, y=data["Lower Band"], mode="lines", name="Lower Bollinger Band", line=dict(color=_CHART[5], dash="dash")))
 
                 fig.update_layout(xaxis_rangeslider_visible=False)
-                st.plotly_chart(fig, use_container_width=True)
+                ui_theme.style_fig(fig)
+                st.plotly_chart(fig, use_container_width=True, theme=None)
 
             except Exception as e:
                 st.error(f"⚠️ Error: {str(e)}")
@@ -363,7 +334,7 @@ elif selected_page == "📉 Historical Analysis":
     hist_period = st.selectbox(
         "Select Period", ["1 Month", "3 Months", "6 Months", "1 Year", "2 Years", "Full History"])
 
-    if st.button("📊 Analyze"):
+    if st.button("📊 Analyze", type="primary"):
         try:
             with st.spinner("Fetching historical data..."):
                 # Fetch full data from Alpha Vantage
@@ -394,25 +365,27 @@ elif selected_page == "📉 Historical Analysis":
                 st.dataframe(df)
 
                 st.subheader("📈 Closing Price Trend")
-                st.line_chart(df["Close"])
+                st.line_chart(df["Close"], color=ui_theme.ACCENT)
 
                 # Moving Averages
                 df["SMA20"] = df["Close"].rolling(window=20).mean()
                 df["SMA50"] = df["Close"].rolling(window=50).mean()
                 fig = go.Figure()
-                fig.add_trace(go.Scatter(x=df.index, y=df["Close"], name="Close", line=dict(color="blue")))
-                fig.add_trace(go.Scatter(x=df.index, y=df["SMA20"], name="SMA20", line=dict(color="orange")))
-                fig.add_trace(go.Scatter(x=df.index, y=df["SMA50"], name="SMA50", line=dict(color="red")))
+                fig.add_trace(go.Scatter(x=df.index, y=df["Close"], name="Close", line=dict(color=_CHART[0])))
+                fig.add_trace(go.Scatter(x=df.index, y=df["SMA20"], name="SMA20", line=dict(color=_CHART[3])))
+                fig.add_trace(go.Scatter(x=df.index, y=df["SMA50"], name="SMA50", line=dict(color=_CHART[1])))
                 fig.update_layout(
                     title=f"{hist_ticker} - SMA Analysis", xaxis_title="Date", yaxis_title="Price")
-                st.plotly_chart(fig, use_container_width=True)
+                ui_theme.style_fig(fig, title_font=_TITLE_FONT)
+                st.plotly_chart(fig, use_container_width=True, theme=None)
                 
                 # Volume Analysis
                 st.subheader("📊 Volume Analysis")
                 fig_volume = go.Figure()
                 fig_volume.add_trace(go.Bar(x=df.index, y=df["Volume"], name="Volume"))
                 fig_volume.update_layout(title=f"{hist_ticker} - Trading Volume", xaxis_title="Date", yaxis_title="Volume")
-                st.plotly_chart(fig_volume, use_container_width=True)
+                ui_theme.style_fig(fig_volume, title_font=_TITLE_FONT)
+                st.plotly_chart(fig_volume, use_container_width=True, theme=None)
                 
         except Exception as e:
             st.error(f"⚠️ Failed to retrieve historical data: {str(e)}")
@@ -429,7 +402,7 @@ elif selected_page == "📊 Stock Correlation Dashboard":
 
     # Fetch Data
     if len(tickers) > 1:
-        if st.button("📊 Analyze Correlation"):
+        if st.button("📊 Analyze Correlation", type="primary"):
             try:
                 with st.spinner("Fetching data and calculating correlations..."):
                     close_data = pd.DataFrame()
@@ -460,15 +433,16 @@ elif selected_page == "📊 Stock Correlation Dashboard":
                     # Plot Correlation Heatmap
                     st.subheader("📊 Correlation Heatmap")
                     fig, ax = plt.subplots(figsize=(10, 8))
-                    sns.heatmap(corr_matrix, annot=True, cmap="coolwarm",
-                                linewidths=0.5, ax=ax, cbar_kws={'label': 'Correlation'}, 
+                    sns.heatmap(corr_matrix, annot=True, cmap=_CORR_CMAP,
+                                linewidths=0.5, linecolor=ui_theme.PAPER, ax=ax, cbar_kws={'label': 'Correlation'}, 
                                 vmin=-1, vmax=1, center=0)
                     plt.title("Stock Price Correlation Matrix")
+                    _night_mpl(fig)
                     st.pyplot(fig)
                     
                     # Display correlation values
                     st.subheader("📈 Correlation Values")
-                    st.dataframe(corr_matrix.style.background_gradient(cmap="coolwarm", vmin=-1, vmax=1))
+                    st.dataframe(corr_matrix.style.background_gradient(cmap=_CORR_CMAP, vmin=-1, vmax=1))
                     
                     # Normalized Price Comparison
                     st.subheader("📉 Normalized Price Comparison")
@@ -479,7 +453,8 @@ elif selected_page == "📊 Stock Correlation Dashboard":
                                                       mode="lines", name=ticker))
                     fig_norm.update_layout(title="Normalized Stock Prices (Base 100)", 
                                           xaxis_title="Date", yaxis_title="Normalized Price")
-                    st.plotly_chart(fig_norm, use_container_width=True)
+                    ui_theme.style_fig(fig_norm, title_font=_TITLE_FONT)
+                    st.plotly_chart(fig_norm, use_container_width=True, theme=None)
                     
                     st.info("⏱️ Note: Alpha Vantage free tier has a rate limit of 25 requests/day and 5 requests/minute. Delays are added to respect this limit.")
 

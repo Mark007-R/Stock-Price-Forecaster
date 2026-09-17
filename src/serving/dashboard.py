@@ -39,6 +39,7 @@ from src.backtest.walkforward import (                                   # noqa:
     expanding_window_folds, walk_forward_predict,
 )
 from src.backtest.trading import backtest_long_flat, backtest_buy_and_hold  # noqa: E402
+import ui_theme                                                           # noqa: E402
 
 RESULTS = ROOT / "results"
 LOGS = ROOT / "logs" / "requests.jsonl"
@@ -50,6 +51,7 @@ START, END = "2021-01-01", "2025-01-01"
 COST_BPS = 5.0
 
 st.set_page_config(page_title="StockAI ops dashboard", layout="wide")
+ui_theme.apply_theme()
 
 st.title("StockAI — honest-evaluation ops dashboard")
 st.caption(
@@ -124,7 +126,8 @@ else:
         fig.update_layout(barmode="group", height=360,
                           yaxis_title="LSTM price RMSE ($)",
                           legend=dict(orientation="h", y=1.12))
-        st.plotly_chart(fig, use_container_width=True)
+        ui_theme.style_fig(fig)
+        st.plotly_chart(fig, use_container_width=True, theme=None)
     with c2:
         st.metric("Median RMSE inflation hidden by the leak",
                   f"{leak['rmse_inflation_pct'].median():.1f}%")
@@ -154,7 +157,8 @@ fig.add_scatter(x=wf["dates"], y=wf["equity_bh"], name="buy & hold (net)",
                 line=dict(dash="dash"))
 fig.update_layout(height=380, yaxis_title="equity (start = 1.0)",
                   legend=dict(orientation="h", y=1.1))
-st.plotly_chart(fig, use_container_width=True)
+ui_theme.style_fig(fig)
+st.plotly_chart(fig, use_container_width=True, theme=None)
 
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Strategy Sharpe (net)", f"{wf['strat']['sharpe']:.2f}",
@@ -167,14 +171,15 @@ m4.metric("Buy & hold total return", f"{wf['bh']['total_return']:+.1%}")
 folds_df = pd.DataFrame(wf["folds"])
 figf = go.Figure()
 figf.add_bar(x=folds_df["fold"], y=folds_df["dir_acc"], name="model dir-acc")
-figf.add_hline(y=wf["always_up"], line_dash="dot",
+figf.add_hline(y=wf["always_up"], line_dash="dot", line_color=ui_theme.INK_2,
                annotation_text=f"always-up {wf['always_up']:.3f}")
-figf.add_hline(y=0.5, line_dash="dot", line_color="grey",
+figf.add_hline(y=0.5, line_dash="dot", line_color=ui_theme.INK_3,
                annotation_text="coin flip")
 figf.update_layout(height=300, xaxis_title="walk-forward fold",
                    yaxis_title="directional accuracy",
                    yaxis_range=[0.3, 0.75])
-st.plotly_chart(figf, use_container_width=True)
+ui_theme.style_fig(figf)
+st.plotly_chart(figf, use_container_width=True, theme=None)
 st.caption(
     "Every fold fits strictly on the past and scores on the following block "
     "(`assert_no_peeking` enforced). The dotted line is the always-up baseline "
