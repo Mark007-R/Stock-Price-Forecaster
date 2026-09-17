@@ -7,7 +7,7 @@
         <h1 class="page-heading">Correlation Matrix</h1>
     </div>
     {% if data_points %}
-    <div style="font-family:var(--mono);font-size:0.75rem;color:var(--text-muted);">
+    <div style="font-family:var(--mono);font-size:0.72rem;color:var(--ink-3);">
         {{ data_points }} overlapping data points
     </div>
     {% endif %}
@@ -46,7 +46,7 @@
 {% endif %}
 
 {% if warning %}
-<div class="alert alert-warning fade-up" style="background:rgba(218,119,86,0.1);border:1px solid rgba(218,119,86,0.3);color:var(--claude-warm);">
+<div class="alert alert-warning fade-up">
     ⚠ {{ warning }}
 </div>
 {% endif %}
@@ -58,30 +58,30 @@
 <div class="row g-3 mb-4">
     {% for ticker, data in stats.items() %}
     <div class="col-md-4 fade-up">
-        <div class="card h-100" style="border-color:rgba(218,119,86,0.2);">
+        <div class="card h-100" style="border-color:var(--accent-line);">
             <div class="card-body">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;">
-                    <span style="font-family:var(--mono);font-size:1.2rem;font-weight:700;color:var(--claude-coral);">{{ ticker }}</span>
+                    <span style="font-family:var(--mono);font-size:1.2rem;font-weight:600;color:var(--accent);">{{ ticker }}</span>
                     <span class="badge {% if data.price_change > 0 %}bg-success{% else %}bg-danger{% endif %}">
                         {{ data.price_change }}%
                     </span>
                 </div>
                 <div class="row g-2">
                     <div class="col-6">
-                        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;">Price</div>
-                        <div style="font-size:1.3rem;font-weight:700;color:var(--text-primary);">${{ data.current_price }}</div>
+                        <div style="font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.12em;">Price</div>
+                        <div style="font-family:var(--font-display);font-size:1.35rem;font-weight:700;color:var(--ink);">${{ data.current_price }}</div>
                     </div>
                     <div class="col-6">
-                        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;">Avg Price</div>
-                        <div style="font-size:1.3rem;font-weight:700;color:var(--text-primary);">${{ data.mean_price }}</div>
+                        <div style="font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.12em;">Avg Price</div>
+                        <div style="font-family:var(--font-display);font-size:1.35rem;font-weight:700;color:var(--ink);">${{ data.mean_price }}</div>
                     </div>
                     <div class="col-6">
-                        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;">Volatility</div>
-                        <div style="font-family:var(--mono);font-weight:600;color:var(--claude-warm);">{{ data.volatility }}%</div>
+                        <div style="font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.12em;">Volatility</div>
+                        <div style="font-family:var(--mono);font-weight:600;color:var(--ink);">{{ data.volatility }}%</div>
                     </div>
                     <div class="col-6">
-                        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;">Sharpe</div>
-                        <div style="font-family:var(--mono);font-weight:600;color:var(--text-primary);">{{ data.sharpe_ratio }}</div>
+                        <div style="font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.12em;">Sharpe</div>
+                        <div style="font-family:var(--mono);font-weight:600;color:var(--ink);">{{ data.sharpe_ratio }}</div>
                     </div>
                 </div>
             </div>
@@ -101,15 +101,15 @@
                 <tbody>
                     {% for pair in corr_pairs %}
                     <tr>
-                        <td style="color:var(--claude-coral);font-weight:600;">{{ pair.ticker1 }}</td>
-                        <td style="color:var(--claude-warm);font-weight:600;">{{ pair.ticker2 }}</td>
-                        <td style="font-weight:700;">{{ pair.correlation }}</td>
+                        <td style="color:var(--accent);font-weight:600;">{{ pair.ticker1 }}</td>
+                        <td style="color:var(--accent-soft);font-weight:600;">{{ pair.ticker2 }}</td>
+                        <td style="font-weight:700;color:var(--ink);">{{ pair.correlation }}</td>
                         <td>
                             {% set ac = pair.correlation|abs %}
                             {% if ac >= 0.8 %}<span class="badge bg-success">Very Strong</span>
                             {% elif ac >= 0.6 %}<span class="badge bg-primary">Strong</span>
                             {% elif ac >= 0.4 %}<span class="badge bg-warning">Moderate</span>
-                            {% else %}<span class="badge" style="background:rgba(90,91,106,0.2);color:var(--text-muted);border:1px solid var(--bg-border);">Weak</span>
+                            {% else %}<span class="badge" style="background:var(--bg-alt);color:var(--ink-3);border:1px solid var(--line-strong);">Weak</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -124,43 +124,43 @@
 <div class="card mb-4 fade-up">
     <div class="card-body">
         <div class="card-title">Correlation Heatmap</div>
-        <p style="font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);margin-bottom:1.25rem;">
+        <p style="font-family:var(--mono);font-size:0.72rem;color:var(--ink-3);margin-bottom:1.25rem;">
             −1 = perfect negative · 0 = no correlation · +1 = perfect positive
         </p>
         <div class="table-responsive">
             <table class="table table-bordered text-center align-middle" style="font-family:var(--mono);font-size:0.85rem;">
                 <thead>
-                    <tr style="background:var(--bg-deep);">
-                        <th style="border-color:var(--bg-border);"></th>
+                    <tr style="background:var(--bg-alt);">
+                        <th style="border-color:var(--line);"></th>
                         {% for label in labels %}
-                        <th style="color:var(--claude-coral);border-color:var(--bg-border);font-size:0.78rem;">{{ label }}</th>
+                        <th style="color:var(--accent);border-color:var(--line);font-size:0.78rem;">{{ label }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for i in range(corr_matrix|length) %}
                     <tr>
-                        <th style="color:var(--claude-coral);background:var(--bg-deep);border-color:var(--bg-border);font-size:0.78rem;">{{ labels[i] }}</th>
+                        <th style="color:var(--accent);background:var(--bg-alt);border-color:var(--line);font-size:0.78rem;">{{ labels[i] }}</th>
                         {% for j in range(corr_matrix[i]|length) %}
                         {% set val = corr_matrix[i][j] %}
                         {% if val >= 0.8 %}
-                            {% set cell_bg = 'background:rgba(45,206,137,0.35);color:#2dce89;' %}
+                            {% set cell_bg = 'background:rgba(52,192,143,0.32);color:var(--accent-strong);' %}
                         {% elif val >= 0.6 %}
-                            {% set cell_bg = 'background:rgba(45,206,137,0.2);color:#2dce89;' %}
+                            {% set cell_bg = 'background:rgba(52,192,143,0.2);color:var(--accent);' %}
                         {% elif val >= 0.4 %}
-                            {% set cell_bg = 'background:rgba(45,206,137,0.1);color:#5eead4;' %}
+                            {% set cell_bg = 'background:rgba(52,192,143,0.1);color:var(--accent);' %}
                         {% elif val >= 0.1 %}
-                            {% set cell_bg = 'background:rgba(45,206,137,0.05);color:var(--text-secondary);' %}
+                            {% set cell_bg = 'background:rgba(52,192,143,0.05);color:var(--ink-2);' %}
                         {% elif val >= -0.1 %}
-                            {% set cell_bg = 'background:var(--bg-card2);color:var(--text-muted);' %}
+                            {% set cell_bg = 'background:var(--bg-alt);color:var(--ink-3);' %}
                         {% elif val >= -0.4 %}
-                            {% set cell_bg = 'background:rgba(218,119,86,0.1);color:var(--claude-warm);' %}
+                            {% set cell_bg = 'background:var(--warn-tint);color:var(--warn);' %}
                         {% elif val >= -0.6 %}
-                            {% set cell_bg = 'background:rgba(245,54,92,0.15);color:#ff6b8a;' %}
+                            {% set cell_bg = 'background:var(--bad-tint);color:var(--bad);' %}
                         {% else %}
-                            {% set cell_bg = 'background:rgba(245,54,92,0.3);color:#f5365c;' %}
+                            {% set cell_bg = 'background:rgba(240,113,103,0.22);color:var(--bad);' %}
                         {% endif %}
-                        <td style="{{ cell_bg }} border-color:var(--bg-border);padding:0.85rem;font-weight:{% if val >= 0.8 or val <= -0.6 %}700{% else %}500{% endif %};">
+                        <td style="{{ cell_bg }} border-color:var(--line);padding:0.85rem;font-weight:{% if val >= 0.8 or val <= -0.6 %}700{% else %}500{% endif %};">
                             {{ val }}
                         </td>
                         {% endfor %}
@@ -171,11 +171,11 @@
         </div>
         <!-- Legend -->
         <div class="d-flex flex-wrap gap-2 mt-4" style="font-family:var(--mono);font-size:0.7rem;">
-            <span style="padding:0.3rem 0.8rem;border-radius:4px;background:rgba(45,206,137,0.35);color:#2dce89;border:1px solid rgba(45,206,137,0.4);">Strong Positive ≥ 0.8</span>
-            <span style="padding:0.3rem 0.8rem;border-radius:4px;background:rgba(45,206,137,0.1);color:#5eead4;border:1px solid rgba(45,206,137,0.2);">Moderate 0.4–0.8</span>
-            <span style="padding:0.3rem 0.8rem;border-radius:4px;background:var(--bg-card2);color:var(--text-muted);border:1px solid var(--bg-border);">Weak −0.4–0.4</span>
-            <span style="padding:0.3rem 0.8rem;border-radius:4px;background:rgba(218,119,86,0.1);color:var(--claude-warm);border:1px solid rgba(218,119,86,0.3);">Moderate −0.8–−0.4</span>
-            <span style="padding:0.3rem 0.8rem;border-radius:4px;background:rgba(245,54,92,0.3);color:#f5365c;border:1px solid rgba(245,54,92,0.4);">Strong Negative ≤ −0.8</span>
+            <span style="padding:0.3rem 0.8rem;border-radius:999px;background:rgba(52,192,143,0.32);color:var(--accent-strong);border:1px solid var(--accent-line);">Strong Positive ≥ 0.8</span>
+            <span style="padding:0.3rem 0.8rem;border-radius:999px;background:rgba(52,192,143,0.1);color:var(--accent);border:1px solid rgba(52,192,143,0.2);">Moderate 0.4–0.8</span>
+            <span style="padding:0.3rem 0.8rem;border-radius:999px;background:var(--bg-alt);color:var(--ink-3);border:1px solid var(--line-strong);">Weak −0.4–0.4</span>
+            <span style="padding:0.3rem 0.8rem;border-radius:999px;background:var(--warn-tint);color:var(--warn);border:1px solid var(--warn-line);">Moderate −0.8–−0.4</span>
+            <span style="padding:0.3rem 0.8rem;border-radius:999px;background:rgba(240,113,103,0.22);color:var(--bad);border:1px solid var(--bad-line);">Strong Negative ≤ −0.8</span>
         </div>
     </div>
 </div>
@@ -198,7 +198,8 @@
 {% block scripts %}
 {% if corr_matrix %}
 <script>
-const CORAL = '#da7756', GREEN = '#2dce89', RED = '#f5365c', BLUE = '#5e72e4';
+// Night Emerald for positive, warm neutral near zero, --warn / --bad for negative.
+const ACCENT = '#34C08F', NEUTRAL = '#b3a595', WARN = '#e0a445', BAD = '#f07167', GRID = '#2f2823';
 const labels = {{ labels|tojson }};
 const corrMatrix = {{ corr_matrix|tojson }};
 
@@ -217,14 +218,14 @@ new Chart(document.getElementById('correlationChart'), {
             label: 'Correlation',
             data: corrData,
             backgroundColor: corrData.map(v =>
-                v >= 0.8  ? 'rgba(45,206,137,0.7)'  :
-                v >= 0.4  ? 'rgba(45,206,137,0.35)' :
-                v >= 0    ? 'rgba(94,114,228,0.3)'  :
-                v >= -0.4 ? 'rgba(218,119,86,0.5)'  :
-                            'rgba(245,54,92,0.7)'
+                v >= 0.8  ? 'rgba(52,192,143,0.7)'  :
+                v >= 0.4  ? 'rgba(52,192,143,0.35)' :
+                v >= 0    ? 'rgba(179,165,149,0.3)' :
+                v >= -0.4 ? 'rgba(224,164,69,0.45)' :
+                            'rgba(240,113,103,0.7)'
             ),
             borderColor: corrData.map(v =>
-                v >= 0.6 ? GREEN : v >= 0 ? BLUE : v >= -0.4 ? CORAL : RED
+                v >= 0.6 ? ACCENT : v >= 0 ? NEUTRAL : v >= -0.4 ? WARN : BAD
             ),
             borderWidth: 1.5, borderRadius: 4
         }]
@@ -234,7 +235,7 @@ new Chart(document.getElementById('correlationChart'), {
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor:'#141519', borderColor:'#252630', borderWidth:1, padding:12, cornerRadius:6,
+                backgroundColor:'#1f1a17', borderColor:'#463b33', borderWidth:1, titleColor:'#f4ede4', bodyColor:'#c9bcae', padding:12, cornerRadius:10,
                 callbacks: {
                     label: c => {
                         const v = c.parsed.y;
@@ -245,7 +246,7 @@ new Chart(document.getElementById('correlationChart'), {
             }
         },
         scales: {
-            y: { min:-1, max:1, grid:{color:'#1a1b21'}, ticks:{callback:v=>v.toFixed(1)} },
+            y: { min:-1, max:1, grid:{color:GRID}, ticks:{callback:v=>v.toFixed(1)} },
             x: { grid:{display:false}, ticks:{maxRotation:45, font:{size:11}} }
         }
     }

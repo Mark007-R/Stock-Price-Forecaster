@@ -7,8 +7,8 @@
         <h1 class="page-heading">Stock Price Predictor</h1>
     </div>
     {% if ticker %}
-    <div style="font-family:var(--mono);font-size:0.75rem;color:var(--text-muted);">
-        Last run: <span style="color:var(--claude-coral);">{{ ticker }}</span> · {{ last_date }}
+    <div style="font-family:var(--mono);font-size:0.72rem;color:var(--ink-3);">
+        Last run: <span style="color:var(--accent);">{{ ticker }}</span> · {{ last_date }}
     </div>
     {% endif %}
 </div>
@@ -116,7 +116,7 @@
         <div style="position:relative;height:380px;">
             <canvas id="futureChart"></canvas>
         </div>
-        <div class="mt-3" style="font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);">
+        <div class="mt-3" style="font-family:var(--mono);font-size:0.72rem;color:var(--ink-3);">
             Bands: {{ interval_method }} — derived from the model's own held-out errors,
             not the asset's volatility. The 80% band should contain ~80% of outcomes;
             widening with horizon is the model admitting compounding uncertainty.
@@ -139,7 +139,7 @@
                         <td>{{ d }}</td>
                         <td>${{ '%.2f'|format(p) }}</td>
                         <td style="font-family:var(--mono);font-size:0.78rem;">${{ '%.2f'|format(interval_lower80[i]) }} – ${{ '%.2f'|format(interval_upper80[i]) }}</td>
-                        <td style="font-family:var(--mono);font-size:0.78rem;color:var(--text-muted);">${{ '%.2f'|format(interval_lower95[i]) }} – ${{ '%.2f'|format(interval_upper95[i]) }}</td>
+                        <td style="font-family:var(--mono);font-size:0.78rem;color:var(--ink-3);">${{ '%.2f'|format(interval_lower95[i]) }} – ${{ '%.2f'|format(interval_upper95[i]) }}</td>
                         <td class="{% if (p-current_price) > 0 %}text-success{% else %}text-danger{% endif %}">${{ '%.2f'|format(p-current_price) }}</td>
                         <td>
                             {% set pct = ((p-current_price)/current_price * 100) %}
@@ -162,16 +162,17 @@
 {% block scripts %}
 {% if ticker %}
 <script>
-const CORAL = '#da7756', GREEN = '#2dce89', BLUE = '#5e72e4';
+// Night Emerald first, then warm neutrals (same order as ui_theme.colorway() in dark mode).
+const ACCENT = '#34C08F', SAND = '#d9b48f', GRID = '#2f2823', GROUND = '#14110f';
 const chartOpts = (extra={}) => ({
     responsive: true, maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
         legend: { labels: { usePointStyle: true, padding: 20 } },
-        tooltip: { backgroundColor: '#141519', borderColor: '#252630', borderWidth: 1, padding: 12, cornerRadius: 6, ...extra.tooltip }
+        tooltip: { backgroundColor: '#1f1a17', borderColor: '#463b33', borderWidth: 1, titleColor: '#f4ede4', bodyColor: '#c9bcae', padding: 12, cornerRadius: 10, ...extra.tooltip }
     },
     scales: {
-        y: { grid: { color: '#1a1b21' }, ticks: { callback: v => '$' + v.toFixed(0) } },
+        y: { grid: { color: GRID }, ticks: { callback: v => '$' + v.toFixed(0) } },
         x: { grid: { display: false }, ticks: { maxRotation: 45, maxTicksLimit: 12 } }
     }, ...extra
 });
@@ -181,8 +182,8 @@ new Chart(document.getElementById('validationChart'), {
     data: {
         labels: {{ dates|tojson }},
         datasets: [
-            { label: 'Actual', data: {{ actual|tojson }}, borderColor: GREEN, backgroundColor: 'rgba(45,206,137,0.06)', tension: 0.3, fill: true, borderWidth: 2, pointRadius: 2, pointHoverRadius: 5, pointBackgroundColor: GREEN },
-            { label: 'Predicted', data: {{ predicted|tojson }}, borderColor: CORAL, backgroundColor: 'rgba(218,119,86,0.06)', tension: 0.3, fill: true, borderWidth: 2, borderDash: [4,4], pointRadius: 2, pointHoverRadius: 5, pointBackgroundColor: CORAL }
+            { label: 'Actual', data: {{ actual|tojson }}, borderColor: ACCENT, backgroundColor: 'rgba(52,192,143,0.08)', tension: 0.3, fill: true, borderWidth: 2, pointRadius: 2, pointHoverRadius: 5, pointBackgroundColor: ACCENT },
+            { label: 'Predicted', data: {{ predicted|tojson }}, borderColor: SAND, backgroundColor: 'rgba(217,180,143,0.05)', tension: 0.3, fill: true, borderWidth: 2, borderDash: [4,4], pointRadius: 2, pointHoverRadius: 5, pointBackgroundColor: SAND }
         ]
     },
     options: { ...chartOpts(), plugins: { ...chartOpts().plugins, tooltip: { ...chartOpts().plugins.tooltip, callbacks: { label: c => c.dataset.label + ': $' + c.parsed.y.toFixed(2) } } } }
@@ -194,11 +195,11 @@ new Chart(document.getElementById('futureChart'), {
         labels: {{ future_dates|tojson }},
         datasets: [
             // Conformal bands (drawn first so the forecast line sits on top).
-            { label: '95% lower', data: {{ interval_lower95|tojson }}, borderColor: 'rgba(94,114,228,0.25)', borderWidth: 1, borderDash: [3,3], pointRadius: 0, fill: false },
-            { label: '95% band',  data: {{ interval_upper95|tojson }}, borderColor: 'rgba(94,114,228,0.25)', backgroundColor: 'rgba(94,114,228,0.07)', borderWidth: 1, borderDash: [3,3], pointRadius: 0, fill: '-1' },
-            { label: '80% lower', data: {{ interval_lower80|tojson }}, borderColor: 'rgba(94,114,228,0.45)', borderWidth: 1, pointRadius: 0, fill: false },
-            { label: '80% band',  data: {{ interval_upper80|tojson }}, borderColor: 'rgba(94,114,228,0.45)', backgroundColor: 'rgba(94,114,228,0.14)', borderWidth: 1, pointRadius: 0, fill: '-1' },
-            { label: 'Forecast', data: {{ future_preds|tojson }}, borderColor: CORAL, backgroundColor: 'rgba(218,119,86,0.08)', tension: 0.4, fill: false, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: CORAL, pointBorderColor: '#0a0b0d', pointBorderWidth: 2 }
+            { label: '95% lower', data: {{ interval_lower95|tojson }}, borderColor: 'rgba(201,188,174,0.22)', borderWidth: 1, borderDash: [3,3], pointRadius: 0, fill: false },
+            { label: '95% band',  data: {{ interval_upper95|tojson }}, borderColor: 'rgba(201,188,174,0.22)', backgroundColor: 'rgba(201,188,174,0.05)', borderWidth: 1, borderDash: [3,3], pointRadius: 0, fill: '-1' },
+            { label: '80% lower', data: {{ interval_lower80|tojson }}, borderColor: 'rgba(201,188,174,0.4)', borderWidth: 1, pointRadius: 0, fill: false },
+            { label: '80% band',  data: {{ interval_upper80|tojson }}, borderColor: 'rgba(201,188,174,0.4)', backgroundColor: 'rgba(201,188,174,0.1)', borderWidth: 1, pointRadius: 0, fill: '-1' },
+            { label: 'Forecast', data: {{ future_preds|tojson }}, borderColor: ACCENT, backgroundColor: 'rgba(52,192,143,0.08)', tension: 0.4, fill: false, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 6, pointBackgroundColor: ACCENT, pointBorderColor: GROUND, pointBorderWidth: 2 }
         ]
     },
     options: { ...chartOpts(), plugins: { ...chartOpts().plugins,

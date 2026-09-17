@@ -160,7 +160,8 @@
 {% block scripts %}
 {% if df %}
 <script>
-const CORAL = '#da7756', GREEN = '#2dce89', BLUE = '#5e72e4', AMBER = '#f59e0b', RED = '#f5365c';
+// Night Emerald first, then warm neutrals (same order as ui_theme.colorway() in dark mode).
+const ACCENT = '#34C08F', SAND = '#d9b48f', NEUTRAL = '#b3a595', GRID = '#2f2823';
 
 const dates      = {{ df|map(attribute='Date')|list|tojson }};
 const closes     = {{ df|map(attribute='Close')|list|tojson }};
@@ -169,9 +170,9 @@ const sma50      = {{ df|map(attribute='SMA50')|list|tojson }};
 const rsiValues  = {{ df|map(attribute='RSI')|list|tojson }};
 const volumes    = {{ df|map(attribute='Volume')|list|tojson }};
 
-const darkTooltip = { backgroundColor:'#141519', borderColor:'#252630', borderWidth:1, padding:12, cornerRadius:6 };
+const darkTooltip = { backgroundColor:'#1f1a17', borderColor:'#463b33', borderWidth:1, titleColor:'#f4ede4', bodyColor:'#c9bcae', padding:12, cornerRadius:10 };
 const darkScale = (fmt) => ({
-    y: { grid:{color:'#1a1b21'}, ticks:{callback: fmt} },
+    y: { grid:{color:GRID}, ticks:{callback: fmt} },
     x: { grid:{display:false}, ticks:{maxRotation:45, maxTicksLimit:14} }
 });
 
@@ -181,9 +182,9 @@ new Chart(document.getElementById('priceChart'), {
     data: {
         labels: dates,
         datasets: [
-            { label:'Close', data:closes, borderColor:BLUE, backgroundColor:'rgba(94,114,228,0.07)', tension:0.3, fill:true, borderWidth:2.5, pointRadius:0, pointHoverRadius:5 },
-            { label:'SMA 20', data:sma20, borderColor:AMBER, tension:0.3, fill:false, borderWidth:1.5, borderDash:[5,5], pointRadius:0 },
-            { label:'SMA 50', data:sma50, borderColor:RED, tension:0.3, fill:false, borderWidth:1.5, borderDash:[10,5], pointRadius:0 }
+            { label:'Close', data:closes, borderColor:ACCENT, backgroundColor:'rgba(52,192,143,0.08)', tension:0.3, fill:true, borderWidth:2.5, pointRadius:0, pointHoverRadius:5 },
+            { label:'SMA 20', data:sma20, borderColor:SAND, tension:0.3, fill:false, borderWidth:1.5, borderDash:[5,5], pointRadius:0 },
+            { label:'SMA 50', data:sma50, borderColor:NEUTRAL, tension:0.3, fill:false, borderWidth:1.5, borderDash:[10,5], pointRadius:0 }
         ]
     },
     options: {
@@ -200,14 +201,14 @@ new Chart(document.getElementById('rsiChart'), {
     data: {
         labels: dates,
         datasets: [
-            { label:'RSI', data:rsiValues, borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.07)', tension:0.3, fill:true, borderWidth:2, pointRadius:0 }
+            { label:'RSI', data:rsiValues, borderColor:ACCENT, backgroundColor:'rgba(52,192,143,0.07)', tension:0.3, fill:true, borderWidth:2, pointRadius:0 }
         ]
     },
     options: {
         responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{...darkTooltip} },
         scales:{
-            y:{ min:0, max:100, grid:{color:'#1a1b21'},
+            y:{ min:0, max:100, grid:{color:GRID},
                 ticks:{ callback: v => { if(v===70) return '70 OB'; if(v===30) return '30 OS'; return v===50?'50':''; } }
             },
             x:{ grid:{display:false}, ticks:{maxRotation:45, maxTicksLimit:10} }
@@ -222,8 +223,8 @@ new Chart(document.getElementById('volumeChart'), {
         labels: dates,
         datasets: [{
             label:'Volume', data:volumes,
-            backgroundColor: 'rgba(218,119,86,0.4)',
-            borderColor: CORAL,
+            backgroundColor: 'rgba(52,192,143,0.35)',
+            borderColor: ACCENT,
             borderWidth: 1, borderRadius: 3
         }]
     },
@@ -231,7 +232,7 @@ new Chart(document.getElementById('volumeChart'), {
         responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{...darkTooltip, callbacks:{label:c=>'Vol: '+(c.parsed.y/1e6).toFixed(2)+'M'}} },
         scales:{
-            y:{ beginAtZero:true, grid:{color:'#1a1b21'}, ticks:{callback:v=>(v/1e6).toFixed(1)+'M'} },
+            y:{ beginAtZero:true, grid:{color:GRID}, ticks:{callback:v=>(v/1e6).toFixed(1)+'M'} },
             x:{ grid:{display:false}, ticks:{maxRotation:45, maxTicksLimit:10} }
         }
     }
